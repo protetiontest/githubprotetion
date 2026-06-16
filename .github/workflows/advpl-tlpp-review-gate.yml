@@ -46,7 +46,7 @@ jobs:
                 continue;
               }
 
-              // Only scan AdvPL/TLPP source files
+              // Only scan AdvPL/TLPP source files (.prw, .prx, .tlpp)
               const isLegacySource = file.filename.endsWith('.prw') || file.filename.endsWith('.prx');
               const isTlppSource = file.filename.endsWith('.tlpp');
               const isAdvplOrTlppSource = isLegacySource || isTlppSource;
