@@ -25,7 +25,7 @@ GitHub Copilot code review leaves comments, but it does not count as a required 
 
 - Protect `main`
 - Require pull requests before merging
-- Require the `advpl-tlpp-review-gate` status check
+- Require the `Critical policy gate` status check (workflow: `AdvPL/TLPP PR Gate`)
 - Require code owner reviews
 - Block force pushes
 - Dismiss stale approvals when new commits are pushed
