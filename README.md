@@ -6,7 +6,7 @@ Prototype for an AdvPL/TLPP review flow inside GitHub.
 
 1. Developers work only on feature branches.
 2. Pull requests target `main`.
-3. GitHub Actions runs the `advpl-tlpp-review-gate` workflow.
+3. GitHub Actions runs the `AdvPL/TLPP PR Gate` workflow.
 4. Copilot review is requested from the PR reviewers menu and used for advisory feedback.
 5. `@protetiontest/techlead` is required by `CODEOWNERS`.
 6. Merge is allowed only after the required checks and the tech lead approval.
