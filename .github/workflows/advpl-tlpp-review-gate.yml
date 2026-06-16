@@ -48,6 +48,11 @@ jobs:
 
               const isLegacySource = file.filename.endsWith('.prw') || file.filename.endsWith('.prx');
               const isTlppSource = file.filename.endsWith('.tlpp');
+              const isAdvplOrTlppSource = isLegacySource || isTlppSource;
+
+              if (!isAdvplOrTlppSource) {
+                continue;
+              }
 
               if (isLegacySource && /^\+\s*#include\s+"tlpp-core\.th"/mi.test(patch)) {
                 findings.push(`${file.filename}: tlpp-core.th must not be added to .prw or .prx files.`);
