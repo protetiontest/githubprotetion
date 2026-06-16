@@ -4,12 +4,12 @@ User Function TesteQuebrado()
 
     Local cUser := ""
     Local cSenha
-    Local nId = "abc"      // ERRO: tipo incorreto (esperado numérico)
+    Local nId = "abc"      // ERRO: tipo incorreto (esperado numÃ©rico)
 
-    // ERRO DE SEGURANÇA: credencial hardcoded
+    // ERRO DE SEGURANÃ‡A: credencial hardcoded
     cSenha := "123456"
 
-    // ERRO DE SEGURANÇA: concatenação direta (injeção)
+    // ERRO DE SEGURANÃ‡A: concatenaÃ§Ã£o direta (injeÃ§Ã£o)
     cQuery := "SELECT * FROM SA1 WHERE A1_COD = '" + cUser + "'"
 
     dbUseArea(.T., "TOPCONN", cQuery, "TMP", .F., .T.)
