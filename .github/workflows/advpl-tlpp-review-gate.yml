@@ -13,8 +13,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-
+  pull-requests: read
 jobs:
   policy-gate:
     name: Critical policy gate
