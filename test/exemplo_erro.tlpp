@@ -1,0 +1,11 @@
+#include "tlpp-core.th"
+
+Namespace company.test
+
+User Function TesteStaticCall()
+    Local cNome := ""
+    
+    // ERRO: using StaticCall in TLPP is prohibited
+    StaticCall(MyClass, MyMethod, cNome)
+    
+    Return .T.
