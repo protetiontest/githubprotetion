@@ -1,0 +1,125 @@
+name: 'AdvPL/TLPP Policy Gate'
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**.prw'
+      - '**.tlpp'
+      - '**.prx'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  policy-check:
+    name: Check Code Policies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check AdvPL/TLPP violations
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            
+            function isAdvplOrTlppSource(filename) {
+              return filename.endsWith('.prw') || 
+                     filename.endsWith('.tlpp') || 
+                     filename.endsWith('.prx');
+            }
+            
+            const violations = [];
+            const rules = [
+              { pattern: /StaticCall\s*\(/gi, message: 'StaticCall is not allowed in TLPP sources', severity: 'critical' },
+              { pattern: /ConOut\s*\(/gi, message: 'ConOut should be replaced with FWLogMsg', severity: 'critical' },
+              { pattern: /OutErr\s*\(/gi, message: 'OutErr should be replaced with FWLogMsg', severity: 'critical' },
+              { pattern: /IIF\s*\(/gi, message: 'IIF should be replaced with If/Else/EndIf', severity: 'critical' }
+            ];
+            
+            // Get PR files
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            console.log(`Scanning ${files.length} files...`);
+            
+            for (const file of files) {
+              if (!isAdvplOrTlppSource(file.filename)) {
+                console.log(`Skipping ${file.filename} (not AdvPL/TLPP source)`);
+                continue;
+              }
+              
+              console.log(`Analyzing ${file.filename}...`);
+              
+              if (!file.patch) continue;
+              
+              const lines = file.patch.split('\n');
+              lines.forEach((line, index) => {
+                if (!line.startsWith('+')) return;
+                if (line.startsWith('+++')) return;
+                
+                for (const rule of rules) {
+                  if (rule.pattern.test(line)) {
+                    violations.push({
+                      file: file.filename,
+                      line: line.trim().substring(1),
+                      rule: rule.message,
+                      severity: rule.severity
+                    });
+                  }
+                }
+              });
+            }
+            
+            // Report findings
+            if (violations.length > 0) {
+              let comment = '# ❌ Policy Gate Violations Found\n\n';
+              comment += 'The following critical policies were violated:\n\n';
+              
+              const grouped = {};
+              for (const v of violations) {
+                if (!grouped[v.file]) grouped[v.file] = [];
+                grouped[v.file].push(v);
+              }
+              
+              for (const [file, fileViolations] of Object.entries(grouped)) {
+                comment += `\n## 📄 ${file}\n`;
+                fileViolations.forEach(v => {
+                  comment += `\n- **${v.rule}**\n  \`\`\`\n  ${v.line}\n  \`\`\`\n`;
+                });
+              }
+              
+              comment += '\n---\n';
+              comment += '### 🔧 How to Fix\n';
+              comment += '- Replace \`StaticCall\` with regular method calls\n';
+              comment += '- Replace \`ConOut/OutErr\` with \`FWLogMsg\`\n';
+              comment += '- Replace \`IIF\` with \`If/Else/EndIf\` blocks\n';
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+              
+              core.setFailed(`${violations.length} policy violations found`);
+            } else {
+              console.log('✅ No policy violations found!');
+              
+              const comment = '# ✅ Policy Gate Passed\n\nAll code meets AdvPL/TLPP policy requirements.';
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }

@@ -1,0 +1,44 @@
+name: 'Auto Copilot Review'
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  auto-copilot-review:
+    name: Request Copilot Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request Copilot Review
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Try to request Copilot review
+            try {
+              await github.rest.pulls.requestReviewers({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                reviewers: ['@copilot']
+              });
+              console.log('✅ Copilot review requested');
+            } catch (err) {
+              console.log('ℹ️ Could not auto-request Copilot review via API');
+              console.log('Manual Copilot review may still be available via GitHub UI');
+            }
+            
+            // Post status comment
+            const comment = `# 🤖 Review Checklist\n\n## Automated Checks\n- [ ] ⚙️ Policy Gate: Awaiting workflow results\n- [ ] 🤖 Copilot Review: Ready for analysis\n- [ ] 👥 Tech Lead: Awaiting approval\n\n## Guidelines for Reviewers\nThis PR involves AdvPL/TLPP source code. Please ensure:\n- No StaticCall usage (TLPP only)\n- Using FWLogMsg instead of ConOut/OutErr\n- Using If/Else instead of IIF\n- Following TOTVS best practices\n- No security vulnerabilities\n\n---\nLast updated: \`${new Date().toISOString()}\`\n            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+            
+            console.log('📝 Status comment posted');
