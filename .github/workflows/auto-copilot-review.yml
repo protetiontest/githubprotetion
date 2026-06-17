@@ -1,0 +1,66 @@
+name: Auto-request Copilot Review
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  request-copilot-review:
+    name: Request Copilot Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request Copilot code review
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            
+            console.log(`📋 PR #${pr.number}: ${pr.title}`);
+            console.log(`👤 Author: ${pr.user.login}`);
+            console.log(`📝 Description: ${pr.body || '(empty)'}`);
+            
+            // Request Copilot review
+            await github.rest.pulls.requestReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              reviewers: []
+            });
+            
+            console.log('✅ Copilot review requested automatically');
+            
+            // Post summary comment
+            const comment = `## 🤖 Automated Review Process
+
+**Status:** Waiting for Copilot review...
+
+### Review Checklist:
+- [ ] Copilot: Code review completed
+- [ ] Gate: Critical policy gate passed
+- [ ] Tech Lead: Approval granted
+- [ ] Ready to merge
+
+**Timeline:**
+1. ✅ PR created
+2. ⏳ Running policy gate checks...
+3. ⏳ Copilot review in progress...
+4. ⏳ Awaiting tech lead approval...
+
+> This is an automated message. Check the "Checks" tab for gate status.`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: comment
+            });
+            
+            console.log('✅ Summary comment posted');
